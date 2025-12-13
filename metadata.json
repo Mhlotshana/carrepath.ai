@@ -1,0 +1,8 @@
+{
+  "name": "CareerPath.AI",
+  "description": "AI-powered career guidance and application assistant for South African students.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

@@ -1,0 +1,28 @@
+
+export const SUBJECT_OPTIONS = [
+  "English Home Language",
+  "English First Additional Language",
+  "Afrikaans Home Language",
+  "Afrikaans First Additional Language",
+  "IsiZulu Home Language",
+  "IsiXhosa Home Language",
+  "Mathematics",
+  "Mathematical Literacy",
+  "Physical Sciences",
+  "Life Sciences",
+  "Accounting",
+  "Business Studies",
+  "Economics",
+  "History",
+  "Geography",
+  "Life Orientation",
+  "Information Technology",
+  "Computer Applications Technology",
+  "Engineering Graphics and Design",
+  "Tourism",
+  "Consumer Studies",
+  "Hospitality Studies",
+  "Dramatic Arts",
+  "Visual Arts",
+  "Music"
+];
