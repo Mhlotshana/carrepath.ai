@@ -30,18 +30,18 @@ const PaymentPage: React.FC = () => {
     if (!file) return;
     setIsVerifying(true);
     setError('');
-    
+
     try {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64 = (reader.result as string).split(',')[1];
         const verified = await verifyPayment(base64, file.type, referenceId);
-        
+
         if (verified) {
           setSuccess(true);
           unlockPremium();
           setPaymentVerified(true);
-          
+
           // Trigger animation state shortly after render
           setTimeout(() => setShowAnimation(true), 50);
 
@@ -76,7 +76,7 @@ const PaymentPage: React.FC = () => {
               <div className="relative bg-green-50 rounded-full p-8 shadow-sm">
                 <CheckCircle className="w-20 h-20 text-green-600 animate-[bounce_1s_infinite]" />
               </div>
-              
+
               {/* Confetti particles (CSS only) */}
               <div className={`absolute top-0 left-0 w-full h-full pointer-events-none transition-opacity duration-1000 ${showAnimation ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="absolute top-0 left-1/2 w-2 h-2 bg-yellow-400 rounded-full transform -translate-x-1/2 -translate-y-4 animate-bounce delay-75"></div>
@@ -85,12 +85,12 @@ const PaymentPage: React.FC = () => {
                 <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-purple-400 rounded-full transform translate-y-4 animate-bounce delay-200"></div>
               </div>
             </div>
-            
+
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Payment Verified!</h2>
             <p className="text-gray-500 max-w-sm mx-auto mb-8">
               Success! Your premium features have been unlocked. Redirecting you to your dashboard...
             </p>
-            
+
             <div className="flex items-center space-x-2 text-primary-600 font-medium">
               <Loader2 className="w-5 h-5 animate-spin" />
               <span>Redirecting...</span>
@@ -108,28 +108,36 @@ const PaymentPage: React.FC = () => {
                 <h3 className="font-semibold text-gray-900 mb-4">1. Make a Bank Transfer</h3>
                 <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-2 border border-gray-200">
                   <div className="flex justify-between">
+                    <span className="text-gray-500">Account Name:</span>
+                    <span className="font-medium">Menzi Hlabisa</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-gray-500">Bank:</span>
-                    <span className="font-medium">Capitec Bank</span>
+                    <span className="font-medium">FNB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Account Type:</span>
+                    <span className="font-medium">Cheque</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Account Number:</span>
-                    <span className="font-medium">123 456 7890</span>
+                    <span className="font-medium">62682448511</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Branch Code:</span>
-                    <span className="font-medium">470010</span>
+                    <span className="font-medium">250655</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-gray-200">
                     <span className="text-gray-500">Reference:</span>
                     <span className="font-bold text-primary-600">{referenceId}</span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 italic">* Use your ID number as reference so we can track it.</p>
+                <p className="text-sm text-green-600 font-bold mt-2">* Use your ID number as reference so we can track it.</p>
               </div>
 
               <div className="mb-8">
                 <h3 className="font-semibold text-gray-900 mb-4">2. Upload Proof of Payment</h3>
-                <div 
+                <div
                   onClick={() => !isVerifying && fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${file ? 'border-primary-500 bg-primary-50' : 'border-gray-300 hover:bg-gray-50'} ${isVerifying ? 'cursor-not-allowed opacity-70' : ''}`}
                 >
@@ -150,14 +158,14 @@ const PaymentPage: React.FC = () => {
                     <div className="whitespace-pre-wrap">{error}</div>
                   </div>
                   <div className="flex flex-wrap gap-3 pl-7 mt-1">
-                    <button 
+                    <button
                       onClick={() => fileInputRef.current?.click()}
                       className="flex items-center px-3 py-1.5 bg-red-100 text-red-800 rounded-md font-medium hover:bg-red-200 transition-colors text-xs"
                     >
                       <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                       Try Uploading Again
                     </button>
-                    <a 
+                    <a
                       href="mailto:support@careerpath.ai?subject=Payment Verification Help"
                       className="flex items-center px-3 py-1.5 border border-red-200 text-red-700 rounded-md font-medium hover:bg-red-50 transition-colors text-xs"
                     >
@@ -168,14 +176,13 @@ const PaymentPage: React.FC = () => {
                 </div>
               )}
 
-              <button 
+              <button
                 onClick={handleVerify}
                 disabled={!file || isVerifying}
-                className={`w-full py-4 rounded-lg font-bold text-lg flex items-center justify-center transition-all ${
-                  !file || isVerifying
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                className={`w-full py-4 rounded-lg font-bold text-lg flex items-center justify-center transition-all ${!file || isVerifying
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   : 'bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/30'
-                }`}
+                  }`}
               >
                 {isVerifying ? (
                   <>
