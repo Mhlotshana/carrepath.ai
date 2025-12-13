@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult, Subject, ResourceCategory } from "../types";
+import { INSTITUTIONS, FUNDING_SOURCES } from '../constants/institutions';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -60,7 +61,7 @@ export const analyzeProfile = async (subjects: Subject[], aps: number): Promise<
   const hasMathsLit = subjects.some(s => s.name.toLowerCase().includes('mathematical literacy'));
   const mathSubject = subjects.find(s => s.name.toLowerCase().includes('math'));
   const mathLevel = mathSubject ? mathSubject.level : 0;
-  
+
   const hasPhysics = subjects.some(s => s.name.toLowerCase().includes('physical science'));
   const physicsLevel = subjects.find(s => s.name.toLowerCase().includes('physical science'))?.level || 0;
 
@@ -68,7 +69,7 @@ export const analyzeProfile = async (subjects: Subject[], aps: number): Promise<
 
   // Determine Strategy based on APS and Subjects
   let strategyHint = "";
-  
+
   if (aps < 20) {
     strategyHint = "CRITICAL STRATEGY: The APS is very low (< 20). DO NOT suggest University Degrees. Focus EXCLUSIVELY on TVET Colleges (NCV/NATED courses), Bridging Programmes, and SETA Learnerships. Emphasize trade skills (Plumbing, Electrical, Welding, Automotive) where APS requirements are lower.";
   } else if (aps < 25) {
@@ -79,6 +80,17 @@ export const analyzeProfile = async (subjects: Subject[], aps: number): Promise<
     strategyHint = "STRATEGY: The APS is competitive (30+). Focus on Degree programmes at major universities (Wits, UCT, UP, UKZN), but include safety options at Universities of Technology.";
   }
 
+
+
+  const institutionList = `
+      PUBLIC UNIVERSITIES: ${INSTITUTIONS.public_universities.slice(0, 10).join(', ')}, etc.
+      TVET COLLEGES: ${INSTITUTIONS.tvet_colleges.slice(0, 8).join(', ')}, etc.
+      PRIVATE COLLEGES: ${INSTITUTIONS.private_colleges.slice(0, 8).join(', ')}, etc.
+      ONLINE PLATFORMS: ${INSTITUTIONS.online_platforms.join(', ')}.
+    `;
+
+  const fundingList = FUNDING_SOURCES.join(', ');
+
   const prompt = `
     Role: Expert South African Career Guidance Counselor & Admissions Officer.
     
@@ -87,28 +99,35 @@ export const analyzeProfile = async (subjects: Subject[], aps: number): Promise<
     - Subjects: ${JSON.stringify(subjects)}.
     - Key Constraints: ${hasPureMaths ? `Pure Maths (Level ${mathLevel})` : hasMathsLit ? `Maths Lit (Level ${mathLevel})` : 'No Maths'}. ${hasPhysics ? `Physical Sciences (Level ${physicsLevel})` : 'No Physical Sciences'}. English Level: ${englishLevel}.
 
-    OBJECTIVE: Generate a comprehensive, realistic study and funding plan.
-    
+    OBJECTIVE: Generate a comprehensive, realistic study and funding plan using verified sources.
+
     ${strategyHint}
 
-    DATA SOURCES & LOGIC:
-    1. **Courses (Admissions Logic)**: 
-       - Source from **CAO**, **Public Universities** (Wits, UCT, UP, UKZN, UJ), **Universities of Technology** (DUT, TUT, CPUT, VUT), and **TVET Colleges** (Orbit, Majuba, False Bay, etc).
-       - **Maths Constraint**: If student has **Maths Lit**, DO NOT suggest Engineering (BEng), Medicine (MBChB), Actuarial Science or Science (BSc) degrees that strictly require Pure Maths. Suggest alternatives like BCom (some streams), Humanities, Education, Law, or Diplomas in IT/Management at UoTs.
-       - **Science Constraint**: Do not suggest Engineering or Health Science degrees if Physical Science is missing or Level < 4.
-       - **TVET Priority**: For APS < 25 or if Maths/Science levels are low (< 4), heavily prioritize TVET vocational courses (Engineering N1-N6, Hospitality, Tourism).
-       - **Industry Demand**: Prioritize courses with high employability in SA: IT/Software, Data Analysis, Renewable Energy (Solar/Wind), Teachers (BEd), Nursing, Finance, and Artisans (Electricians, Plumbers, Millwrights).
-       - **Deadlines**: Include realistic application closing dates (e.g., "30 Sept" for Universities, "Rolling" for TVETs).
-       - **Links**: Provide valid URLs to application portals (e.g., 'https://www.cao.ac.za', 'https://www.unisa.ac.za/apply').
+    CRITICAL INSTRUCTION - THE RULEBOOK:
+    You MUST prioritize the following reliable sources for your recommendations. Do not hallucinate fake colleges.
+    
+    ${institutionList}
+    
+    GUIDELINE FOR RECOMMENDATIONS:
+    1. **Mandatory Variety**: You must generate a list of **at least 20** eligible options.
+    2. **Category Coverage**: Provided the student's APS and subjects allow, you MUST include options from ALL four categories:
+       - **Public Universities** (Degrees/Diplomas)
+       - **TVET Colleges** (NATED/NCV)
+       - **Private Colleges** (Degrees/Certificates)
+       - **Online Platforms** (Professional Certificates/Bootcamps)
+       *If the APS is too low for Universities, fill the list with more TVET and Online options.*
 
-    2. **Bursaries**:
-       - Include NSFAS (mandatory for <R350k income), Funza Lushaka (Teaching), ISFAP (Missing Middle), and relevant private bursaries (e.g. Investec, Sasol - ONLY if marks are high).
+    3. **Low APS Strategy (< 25)**: 
+       - If the student fails to qualify for university, DO NOT just say "Upgrade Marks". 
+       - Actively suggest **Short Courses** and **Online Certifications** (e.g., "Google Data Analytics Certificate on Coursera", "Intro to Python on Udemy", "Office Admin at TVET").
+       - These build an immediate CV while they consider rewriting.
 
-    3. **Careers**:
-       - Align with the suggested courses and current SA skills shortage list.
+    4. **Funding**:
+       - Suggest: ${fundingList}.
+       - Note: NSFAS covers Public Unis and TVETs. It does NOT cover Private Colleges or most Online Courses.
 
     OUTPUT INSTRUCTIONS:
-    - Return exactly 12 diverse course options (Mix of Degree/Diploma/Higher Cert based on APS logic above).
+    - Return a comprehensive list of **20-25** diverse course options.
     - Return diverse bursary options.
     - Return strictly valid JSON.
   `;
@@ -236,7 +255,7 @@ export const getResources = async (): Promise<ResourceCategory[]> => {
         }
       }
     });
-    
+
     return JSON.parse(response.text || "[]");
   } catch (error) {
     console.error("Resource fetch failed", error);
