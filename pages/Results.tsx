@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import SkeletonResults from '../components/SkeletonResults';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -14,17 +15,18 @@ import {
 } from 'lucide-react';
 
 const ResultsPage: React.FC = () => {
-  const { profile, analysis, isPremium, paymentVerified } = useUser();
+  const { profile, analysis, isPremium, paymentVerified, isLoading } = useUser();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'bursaries' | 'plan'>('overview');
   const [expandedCourse, setExpandedCourse] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!analysis) {
+    if (!analysis && !isLoading) {
       navigate('/upload');
     }
-  }, [analysis, navigate]);
+  }, [analysis, isLoading, navigate]);
 
+  if (isLoading) return <SkeletonResults />;
   if (!analysis || !profile) return null;
 
   // Safely access arrays with fallbacks

@@ -56,6 +56,15 @@ export const extractMatricData = async (base64Data: string, mimeType: string): P
 
 // 2. Analyze Profile and Generate Recommendations
 export const analyzeProfile = async (subjects: Subject[], aps: number): Promise<AnalysisResult> => {
+  // CACHE CHECK: Create a simple signature based on subjects and APS
+  const cacheKey = `cp_analysis_${aps}_${JSON.stringify(subjects.map(s => s.name + s.mark).sort())}`;
+  const cached = localStorage.getItem(cacheKey);
+
+  if (cached) {
+    console.log("Serving from cache ⚡");
+    return JSON.parse(cached);
+  }
+
   // Analyze specific subject constraints for better prompting
   const hasPureMaths = subjects.some(s => s.name.toLowerCase().trim() === 'mathematics');
   const hasMathsLit = subjects.some(s => s.name.toLowerCase().includes('mathematical literacy'));
@@ -218,7 +227,16 @@ export const analyzeProfile = async (subjects: Subject[], aps: number): Promise<
 
     const text = response.text;
     if (!text) throw new Error("No analysis returned");
-    return JSON.parse(text);
+    const result = JSON.parse(text);
+
+    // Save to Cache
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(result));
+    } catch (e) {
+      console.warn("Quota exceeded for localStorage");
+    }
+
+    return result;
   } catch (error) {
     console.error("Analysis error:", error);
     throw new Error("Failed to analyze profile.");
