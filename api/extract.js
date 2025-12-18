@@ -54,12 +54,44 @@ IMPORTANT:
 
 Return valid JSON with the exact structure specified.`;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // Robust model selection with fallback
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-002", "gemini-1.5-flash-001", "gemini-2.0-flash-exp"];
+        let lastError;
+        let resultResponse;
 
-        const resultResponse = await model.generateContent([
-            { inlineData: { mimeType, data: base64Data } },
-            extractionPrompt
-        ]);
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`[EXTRACT] Attempting extraction with model: ${modelName}`);
+                // Force v1 API version for stability
+                const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
+
+                resultResponse = await model.generateContent([
+                    { inlineData: { mimeType, data: base64Data } },
+                    extractionPrompt
+                ]);
+
+                if (resultResponse && resultResponse.response) {
+                    console.log(`[EXTRACT] Successful extraction using ${modelName}`);
+                    break;
+                }
+            } catch (err) {
+                lastError = err;
+                console.warn(`[EXTRACT] Model ${modelName} failed:`, err.message);
+
+                // If it's a 404 (Not Found) or 400 (Bad Request on model name), try next choice
+                if (err.message.includes("404") || err.message.includes("400")) {
+                    continue;
+                }
+
+                // For other errors (401 Unauthorized, 429 Quota), we should probably stop
+                break;
+            }
+        }
+
+        if (!resultResponse) {
+            console.error("[EXTRACT] All models failed. Last error:", lastError?.message);
+            throw lastError || new Error("Failed to contact any Gemini models");
+        }
 
         const text = resultResponse.response.text();
         if (!text) {

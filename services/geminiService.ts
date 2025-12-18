@@ -39,11 +39,33 @@ export const extractMatricData = async (base64Data: string, mimeType: string): P
   try {
     if (!genAI) throw new Error("AI not initialized");
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const resultResponse = await model.generateContent([
-      { inlineData: { mimeType, data: base64Data } },
-      "Analyze this South African matric certificate. Extract student name, ID number, and ALL subjects with percentage marks. Include at least 6 subjects. Return valid JSON."
-    ]);
+    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-002", "gemini-1.5-flash-001", "gemini-2.0-flash-exp"];
+    let lastError;
+    let resultResponse;
+
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`[LOCAL-EXTRACT] Trying model: ${modelName}`);
+        const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
+        resultResponse = await model.generateContent([
+          { inlineData: { mimeType, data: base64Data } },
+          "Analyze this South African matric certificate. Extract student name, ID number, and ALL subjects with percentage marks. Include at least 6 subjects. Return valid JSON."
+        ]);
+
+        if (resultResponse && resultResponse.response) {
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[LOCAL-EXTRACT] Model ${modelName} failed:`, err.message);
+        if (err.message.includes("404") || err.message.includes("400")) {
+          continue;
+        }
+        break;
+      }
+    }
+
+    if (!resultResponse) throw lastError || new Error("All models failed");
 
     const text = resultResponse.response.text();
     if (!text) throw new Error("No data returned");
