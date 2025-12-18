@@ -1,6 +1,6 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export default async function handler(req, res) {
     // Enable CORS
@@ -54,20 +54,14 @@ IMPORTANT:
 
 Return valid JSON with the exact structure specified.`;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
-            contents: {
-                parts: [
-                    { inlineData: { mimeType, data: base64Data } },
-                    { text: extractionPrompt }
-                ]
-            },
-            config: {
-                temperature: 0.1,
-            }
-        });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const text = response.text;
+        const resultResponse = await model.generateContent([
+            { inlineData: { mimeType, data: base64Data } },
+            extractionPrompt
+        ]);
+
+        const text = resultResponse.response.text();
         if (!text) {
             console.error("[EXTRACT] No response from AI");
             throw new Error("No data returned from AI");

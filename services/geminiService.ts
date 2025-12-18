@@ -1,11 +1,11 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AnalysisResult, Subject, ResourceCategory } from "../types";
 
 // Detect if we're running locally or in production
 const isProduction = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
 
 // For local development, use direct API calls
-const ai = !isProduction ? new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY) : null;
+const genAI = !isProduction ? new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY) : null;
 
 // 1. Extract Matric Data - Works locally AND in production
 export const extractMatricData = async (base64Data: string, mimeType: string): Promise<{ subjects: Subject[]; name?: string; idNumber?: string }> => {
@@ -37,22 +37,15 @@ export const extractMatricData = async (base64Data: string, mimeType: string): P
 
   // LOCAL DEVELOPMENT: Direct API call
   try {
-    if (!ai) throw new Error("AI not initialized");
+    if (!genAI) throw new Error("AI not initialized");
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: {
-        parts: [
-          { inlineData: { mimeType, data: base64Data } },
-          { text: "Analyze this South African matric certificate. Extract student name, ID number, and ALL subjects with percentage marks. Include at least 6 subjects. Return valid JSON." }
-        ]
-      },
-      config: {
-        temperature: 0.1,
-      }
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const resultResponse = await model.generateContent([
+      { inlineData: { mimeType, data: base64Data } },
+      "Analyze this South African matric certificate. Extract student name, ID number, and ALL subjects with percentage marks. Include at least 6 subjects. Return valid JSON."
+    ]);
 
-    const text = response.text;
+    const text = resultResponse.response.text();
     if (!text) throw new Error("No data returned");
 
     // Robust JSON parsing (handles potential markdown blocks)
