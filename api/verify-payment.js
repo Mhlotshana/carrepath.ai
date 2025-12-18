@@ -1,8 +1,16 @@
-import { GoogleGenAI, Type } from "@google/genai";
+const { GoogleGenAI } = require("@google/genai");
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -15,20 +23,20 @@ export default async function handler(req, res) {
         }
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.0-flash-exp',
             contents: {
                 parts: [
-                    { inlineData: { mimeType: mimeType, data: base64Data } },
+                    { inlineData: { mimeType, data: base64Data } },
                     { text: `Verify if this is a legitimate Proof of Payment document. Look for a reference number containing '${expectedId}' or an amount of R120.00. Return valid JSON.` }
                 ]
             },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
-                    type: Type.OBJECT,
+                    type: "object",
                     properties: {
-                        verified: { type: Type.BOOLEAN },
-                        reason: { type: Type.STRING }
+                        verified: { type: "boolean" },
+                        reason: { type: "string" }
                     }
                 }
             }
@@ -40,4 +48,4 @@ export default async function handler(req, res) {
         console.error("Verification failed", error);
         return res.status(500).json({ verified: false, reason: 'Server error' });
     }
-}
+};

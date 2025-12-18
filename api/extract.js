@@ -1,14 +1,21 @@
-import { GoogleGenAI, Type } from "@google/genai";
+const { GoogleGenAI } = require("@google/genai");
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export default async function handler(req, res) {
-    // Only allow POST
+module.exports = async function handler(req, res) {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Check if API key is configured
     if (!process.env.GEMINI_API_KEY) {
         console.error("[EXTRACT] GEMINI_API_KEY not configured!");
         return res.status(500).json({
@@ -26,7 +33,6 @@ export default async function handler(req, res) {
 
         console.log(`[EXTRACT] Processing ${mimeType} document...`);
 
-        // Enhanced prompt for better extraction
         const extractionPrompt = `You are analyzing a South African matric certificate or academic result document.
 
 TASK: Extract the following information with maximum accuracy:
@@ -49,35 +55,28 @@ IMPORTANT:
 Return valid JSON with the exact structure specified.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash-exp', // Latest model for better accuracy
+            model: 'gemini-2.0-flash-exp',
             contents: {
                 parts: [
-                    {
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: base64Data
-                        }
-                    },
-                    {
-                        text: extractionPrompt
-                    }
+                    { inlineData: { mimeType, data: base64Data } },
+                    { text: extractionPrompt }
                 ]
             },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
-                    type: Type.OBJECT,
+                    type: "object",
                     properties: {
-                        name: { type: Type.STRING },
-                        idNumber: { type: Type.STRING },
+                        name: { type: "string" },
+                        idNumber: { type: "string" },
                         subjects: {
-                            type: Type.ARRAY,
+                            type: "array",
                             items: {
-                                type: Type.OBJECT,
+                                type: "object",
                                 properties: {
-                                    name: { type: Type.STRING },
-                                    mark: { type: Type.NUMBER },
-                                    level: { type: Type.NUMBER }
+                                    name: { type: "string" },
+                                    mark: { type: "number" },
+                                    level: { type: "number" }
                                 },
                                 required: ['name', 'mark']
                             }
@@ -85,7 +84,7 @@ Return valid JSON with the exact structure specified.`;
                     },
                     required: ['subjects']
                 },
-                temperature: 0.1, // Lower temperature for more deterministic extraction
+                temperature: 0.1,
             }
         });
 
@@ -97,7 +96,6 @@ Return valid JSON with the exact structure specified.`;
 
         const result = JSON.parse(text);
 
-        // Validate extraction
         if (!result.subjects || result.subjects.length < 3) {
             console.warn(`[EXTRACT] Insufficient subjects extracted: ${result.subjects?.length || 0}`);
             return res.status(400).json({
@@ -118,4 +116,4 @@ Return valid JSON with the exact structure specified.`;
             suggestion: 'Try using a clearer image, better lighting, or manual entry.'
         });
     }
-}
+};
