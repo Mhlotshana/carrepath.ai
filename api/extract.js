@@ -1,6 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+    apiVersion: "v1"
+});
 
 export default async function handler(req, res) {
     // Enable CORS
@@ -55,7 +58,7 @@ IMPORTANT:
 Return valid JSON with the exact structure specified.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-pro',
+            model: 'gemini-1.5-flash',
             contents: {
                 parts: [
                     { inlineData: { mimeType, data: base64Data } },
