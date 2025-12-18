@@ -55,7 +55,7 @@ IMPORTANT:
 Return valid JSON with the exact structure specified.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-pro-vision',
             contents: {
                 parts: [
                     { inlineData: { mimeType, data: base64Data } },
