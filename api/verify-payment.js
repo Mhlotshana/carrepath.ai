@@ -23,7 +23,7 @@ export default async function handler(req, res) {
         }
 
         const response = await ai.models.generateContent({
-            model: 'gemini-pro-vision',
+            model: 'gemini-pro',
             contents: {
                 parts: [
                     { inlineData: { mimeType, data: base64Data } },

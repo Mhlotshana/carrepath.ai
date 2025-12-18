@@ -40,7 +40,7 @@ export const extractMatricData = async (base64Data: string, mimeType: string): P
     if (!ai) throw new Error("AI not initialized");
 
     const response = await ai.models.generateContent({
-      model: 'gemini-pro-vision',
+      model: 'gemini-pro',
       contents: {
         parts: [
           { inlineData: { mimeType, data: base64Data } },
