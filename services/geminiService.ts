@@ -7,7 +7,7 @@ const isProduction = window.location.hostname !== 'localhost' && !window.locatio
 // For local development, use direct API calls
 const ai = !isProduction ? new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY,
-  apiVersion: "v1beta"
+  apiVersion: "v1"
 }) : null;
 
 // 1. Extract Matric Data - Works locally AND in production
@@ -43,7 +43,7 @@ export const extractMatricData = async (base64Data: string, mimeType: string): P
     if (!ai) throw new Error("AI not initialized");
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash-latest',
+      model: 'gemini-1.5-flash',
       contents: {
         parts: [
           { inlineData: { mimeType, data: base64Data } },
@@ -51,31 +51,22 @@ export const extractMatricData = async (base64Data: string, mimeType: string): P
         ]
       },
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            name: { type: Type.STRING },
-            idNumber: { type: Type.STRING },
-            subjects: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  mark: { type: Type.NUMBER },
-                  level: { type: Type.NUMBER }
-                }
-              }
-            }
-          }
-        }
+        temperature: 0.1,
       }
     });
 
     const text = response.text;
     if (!text) throw new Error("No data returned");
-    return JSON.parse(text);
+
+    // Robust JSON parsing (handles potential markdown blocks)
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonText = jsonMatch ? jsonMatch[0] : text;
+      return JSON.parse(jsonText);
+    } catch (parseError) {
+      console.error("JSON Parse failed. Raw text:", text);
+      throw new Error("Invalid data format received.");
+    }
   } catch (error) {
     console.error("Extraction error:", error);
     throw new Error("Failed to extract data. Please try manual entry.");

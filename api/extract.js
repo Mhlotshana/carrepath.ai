@@ -2,7 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
-    apiVersion: "v1beta"
+    apiVersion: "v1"
 });
 
 export default async function handler(req, res) {
@@ -58,7 +58,7 @@ IMPORTANT:
 Return valid JSON with the exact structure specified.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-1.5-flash',
             contents: {
                 parts: [
                     { inlineData: { mimeType, data: base64Data } },
@@ -66,27 +66,6 @@ Return valid JSON with the exact structure specified.`;
                 ]
             },
             config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        name: { type: Type.STRING },
-                        idNumber: { type: Type.STRING },
-                        subjects: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    name: { type: Type.STRING },
-                                    mark: { type: Type.NUMBER },
-                                    level: { type: Type.NUMBER }
-                                },
-                                required: ['name', 'mark']
-                            }
-                        }
-                    },
-                    required: ['subjects']
-                },
                 temperature: 0.1,
             }
         });
@@ -97,7 +76,18 @@ Return valid JSON with the exact structure specified.`;
             throw new Error("No data returned from AI");
         }
 
-        const result = JSON.parse(text);
+        console.log("[EXTRACT] AI Raw Response Length:", text.length);
+
+        // Robust JSON parsing (handles potential markdown blocks)
+        let result;
+        try {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            const jsonText = jsonMatch ? jsonMatch[0] : text;
+            result = JSON.parse(jsonText);
+        } catch (parseError) {
+            console.error("[EXTRACT] JSON Parse failed. Raw text:", text);
+            throw new Error("AI returned invalid JSON format. Please try again.");
+        }
 
         if (!result.subjects || result.subjects.length < 3) {
             console.warn(`[EXTRACT] Insufficient subjects extracted: ${result.subjects?.length || 0}`);
