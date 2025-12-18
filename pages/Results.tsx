@@ -14,11 +14,56 @@ import {
   FlaskConical, ScrollText, Code
 } from 'lucide-react';
 
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+
 const ResultsPage: React.FC = () => {
   const { profile, analysis, isPremium, paymentVerified, isLoading } = useUser();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'bursaries' | 'plan'>('overview');
   const [expandedCourse, setExpandedCourse] = useState<number | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  const downloadPDF = async () => {
+    const element = document.getElementById('printable-results');
+    if (!element) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      // Temporarily expand everything for PDF capture if needed
+      // Or use a hidden comprehensive view
+      const canvas = await html2canvas(element, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#f8fafc' // Matches bg-gray-50
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210; // A4 width
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`CareerPath_Analysis_${profile?.name.replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error('PDF Generation failed:', error);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   useEffect(() => {
     if (!analysis && !isLoading) {
@@ -192,29 +237,139 @@ const ResultsPage: React.FC = () => {
         </div>
 
         <div className="flex-1 w-full text-center md:text-left">
-          <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-4 mb-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-2">
             <div>
               <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Hello, {profile.name}</h1>
               <p className="text-gray-600 text-base font-medium">We've analyzed your results and found <strong className="text-primary-600">{courses.length} potential matches</strong>.</p>
             </div>
 
-            <div className={`flex items-center px-4 py-2 rounded-full text-xs font-bold border shadow-sm ${hasPremiumAccess
-              ? 'bg-green-50 text-green-700 border-green-200'
-              : 'bg-orange-50 text-orange-700 border-orange-200'
-              }`}>
-              {hasPremiumAccess ? (
-                <>
-                  <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Premium Access
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="w-3.5 h-3.5 mr-1.5" /> Free Account
-                </>
-              )}
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={downloadPDF}
+                disabled={isGeneratingPDF}
+                className="flex items-center px-5 py-2.5 bg-white text-gray-900 border border-gray-200 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+              >
+                {isGeneratingPDF ? (
+                  <>
+                    <Clock className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 mr-2 text-primary-600" />
+                    Download PDF
+                  </>
+                )}
+              </button>
+
+              <div className={`flex items-center px-4 py-2 rounded-full text-xs font-bold border shadow-sm ${hasPremiumAccess
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-orange-50 text-orange-700 border-orange-200'
+                }`}>
+                {hasPremiumAccess ? (
+                  <>
+                    <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Premium Access
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-3.5 h-3.5 mr-1.5" /> Free Account
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* COMPREHENSIVE VIEW FOR PDF EXPORT (Hidden from UI) */}
+      <div id="printable-results" className="fixed left-[-9999px] top-0 w-[800px] p-10 bg-gray-50 text-gray-900 font-sans">
+        <div className="mb-10 flex justify-between items-end border-b-4 border-primary-600 pb-6">
+          <div>
+            <h1 className="text-4xl font-black text-gray-900 mb-1">CareerPath<span className="text-primary-600">.AI</span></h1>
+            <p className="text-gray-500 font-bold uppercase tracking-[0.2em] text-xs">Official Career Analysis Report</p>
+          </div>
+          <div className="text-right">
+            <p className="font-bold text-gray-900">{profile.name}</p>
+            <p className="text-xs text-gray-500">APS Score: {profile.apsScore}</p>
+            <p className="text-xs text-gray-400">{new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+
+        {/* 1. Insight Summary */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-black mb-4 flex items-center">
+            <LayoutDashboard className="w-6 h-6 mr-3 text-primary-600" />
+            Strategic Insight
+          </h2>
+          <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 mb-6">
+            <h3 className="font-bold text-lg mb-2 text-gray-800">{summary.title}</h3>
+            <p className="text-gray-600 leading-relaxed">{summary.overview}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="bg-green-50 p-6 rounded-2xl border border-green-100">
+              <h4 className="font-bold text-green-800 mb-3 flex items-center">
+                <ThumbsUp className="w-4 h-4 mr-2" /> Strengths
+              </h4>
+              <ul className="space-y-2">
+                {summary.strengths.map((s, i) => <li key={i} className="text-xs text-green-700 font-medium">• {s}</li>)}
+              </ul>
+            </div>
+            <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100">
+              <h4 className="font-bold text-orange-800 mb-3 flex items-center">
+                <AlertOctagon className="w-4 h-4 mr-2" /> Considerations
+              </h4>
+              <ul className="space-y-2">
+                {summary.limitations.map((l, i) => <li key={i} className="text-xs text-orange-700 font-medium">• {l}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Top University Matches */}
+        <div className="mb-12 page-break-before">
+          <h2 className="text-2xl font-black mb-6 flex items-center">
+            <GraduationCap className="w-6 h-6 mr-3 text-primary-600" />
+            Top Study Matches
+          </h2>
+          <div className="space-y-4">
+            {courses.slice(0, 5).map((course, i) => (
+              <div key={i} className="bg-white p-5 rounded-xl border border-gray-200">
+                <div className="flex justify-between mb-2">
+                  <h3 className="font-bold text-gray-900">{course.name}</h3>
+                  <span className="text-[10px] font-black uppercase text-gray-400">{course.type}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-500">{course.institution}</p>
+                  <p className="text-xs font-bold text-primary-600">APS Req: {course.minAps}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 3. Action Plan */}
+        <div className="page-break-before">
+          <h2 className="text-2xl font-black mb-6 flex items-center">
+            <ListTodo className="w-6 h-6 mr-3 text-primary-600" />
+            Next Steps
+          </h2>
+          <div className="space-y-4">
+            {actionPlan.map((item, i) => (
+              <div key={i} className="flex items-center gap-4 bg-white p-4 rounded-xl border-l-4 border-l-primary-600 border border-gray-200">
+                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center font-black text-xs text-gray-400">{i + 1}</div>
+                <div>
+                  <p className="font-bold text-gray-900">{item.title}</p>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest">{item.category} • Due: {item.deadline}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-20 pt-10 border-t border-gray-200 text-center">
+          <p className="text-xs text-gray-400 font-medium tracking-widest uppercase">Generated by CareerPath.AI - Your Future, Simplified.</p>
+        </div>
+      </div>
 
       {/* Navigation Tabs */}
       <div className="glass rounded-2xl overflow-hidden shadow-sm">
@@ -491,82 +646,86 @@ const ResultsPage: React.FC = () => {
               </div>
             )}
           </div>
-        )}
+        )
+        }
 
         {/* Bursaries */}
-        {activeTab === 'bursaries' && (
-          <div className="space-y-4 animate-fade-in-up">
-            {displayedBursaries.length === 0 ? (
-              <div className="text-center py-16 bg-white/50 glass-card rounded-3xl border-dashed border-2 border-gray-200">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Wallet className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-1">No bursaries found</h3>
-                <p className="text-gray-500">We couldn't find specific funding for this profile.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {displayedBursaries.map((bursary, idx) => (
-                  <div key={idx} className="glass-card p-6 rounded-2xl flex flex-col h-full hover:border-primary-200 transition-colors group">
-                    <div className="mb-6 flex-grow">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="p-2.5 bg-green-50 rounded-xl text-green-600 border border-green-100">
-                          <Wallet className="w-6 h-6" />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2.5 py-1 rounded-md">
-                          Bursary
-                        </span>
-                      </div>
-                      <h4 className="font-bold text-gray-900 text-lg mb-2 line-clamp-2 leading-tight group-hover:text-primary-600 transition-colors">{bursary.name}</h4>
-                      <p className="text-sm text-gray-500 font-medium">{bursary.provider}</p>
-                    </div>
-
-                    <div className="space-y-4 pt-4 border-t border-gray-50 mt-auto">
-                      <div className="flex items-center text-xs font-bold text-gray-500">
-                        <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                        Closes: {bursary.closingDate}
-                      </div>
-
-                      <a
-                        href={bursary.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block w-full text-center bg-gray-900 text-white hover:bg-black font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-gray-200 transform group-hover:-translate-y-1"
-                      >
-                        Apply Now
-                      </a>
-                    </div>
+        {
+          activeTab === 'bursaries' && (
+            <div className="space-y-4 animate-fade-in-up">
+              {displayedBursaries.length === 0 ? (
+                <div className="text-center py-16 bg-white/50 glass-card rounded-3xl border-dashed border-2 border-gray-200">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Wallet className="w-8 h-8 text-gray-400" />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">No bursaries found</h3>
+                  <p className="text-gray-500">We couldn't find specific funding for this profile.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {displayedBursaries.map((bursary, idx) => (
+                    <div key={idx} className="glass-card p-6 rounded-2xl flex flex-col h-full hover:border-primary-200 transition-colors group">
+                      <div className="mb-6 flex-grow">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="p-2.5 bg-green-50 rounded-xl text-green-600 border border-green-100">
+                            <Wallet className="w-6 h-6" />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2.5 py-1 rounded-md">
+                            Bursary
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-gray-900 text-lg mb-2 line-clamp-2 leading-tight group-hover:text-primary-600 transition-colors">{bursary.name}</h4>
+                        <p className="text-sm text-gray-500 font-medium">{bursary.provider}</p>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t border-gray-50 mt-auto">
+                        <div className="flex items-center text-xs font-bold text-gray-500">
+                          <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                          Closes: {bursary.closingDate}
+                        </div>
+
+                        <a
+                          href={bursary.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full text-center bg-gray-900 text-white hover:bg-black font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-gray-200 transform group-hover:-translate-y-1"
+                        >
+                          Apply Now
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        }
 
         {/* Action Plan */}
-        {activeTab === 'plan' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up">
-            {actionPlan.map((item, idx) => (
-              <div key={idx} className="glass-card p-6 rounded-2xl flex items-start gap-5 hover:bg-white transition-colors">
-                <div className={`mt-1 w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${item.completed ? 'bg-green-100 border-green-200' : 'border-gray-200'}`}>
-                  {item.completed && <CheckCircle className="w-5 h-5 text-green-600" />}
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg leading-tight mb-2">{item.title}</h4>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-600 uppercase tracking-wide">
-                      {item.category}
-                    </span>
-                    <span className="text-xs font-medium text-gray-400 flex items-center">
-                      <Calendar className="w-3.5 h-3.5 mr-1" />
-                      Due {item.deadline}
-                    </span>
+        {
+          activeTab === 'plan' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up">
+              {actionPlan.map((item, idx) => (
+                <div key={idx} className="glass-card p-6 rounded-2xl flex items-start gap-5 hover:bg-white transition-colors">
+                  <div className={`mt-1 w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${item.completed ? 'bg-green-100 border-green-200' : 'border-gray-200'}`}>
+                    {item.completed && <CheckCircle className="w-5 h-5 text-green-600" />}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-lg leading-tight mb-2">{item.title}</h4>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-600 uppercase tracking-wide">
+                        {item.category}
+                      </span>
+                      <span className="text-xs font-medium text-gray-400 flex items-center">
+                        <Calendar className="w-3.5 h-3.5 mr-1" />
+                        Due {item.deadline}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
       </div>
     </div>
   );
