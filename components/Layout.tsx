@@ -32,7 +32,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </span>
               </Link>
             </div>
-            
+
             <div className="hidden md:flex md:items-center md:space-x-8">
               <NavItem to="/" icon={Home} label="Home" active={location.pathname === '/'} />
               <NavItem to="/upload" icon={Upload} label="Check APS" active={location.pathname === '/upload'} />
@@ -52,7 +52,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         {/* Mobile Menu Dropdown */}
         {isMobileMenuOpen && (
           <div className="md:hidden glass border-t border-gray-100/50 absolute w-full animate-fade-in-up">
-             <div className="px-4 pt-4 pb-6 space-y-2 flex flex-col">
+            <div className="px-4 pt-4 pb-6 space-y-2 flex flex-col">
               <Link to="/" className="block px-4 py-3 rounded-xl hover:bg-primary-50 text-base font-medium text-gray-700 hover:text-primary-700 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
               <Link to="/upload" className="block px-4 py-3 rounded-xl hover:bg-primary-50 text-base font-medium text-gray-700 hover:text-primary-700 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>My Profile</Link>
               <Link to="/results" className="block px-4 py-3 rounded-xl hover:bg-primary-50 text-base font-medium text-gray-700 hover:text-primary-700 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Results</Link>
@@ -74,6 +74,25 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <NavItem to="/chat" icon={MessageCircle} label="Chat" active={location.pathname === '/chat'} />
         <NavItem to="/reminders" icon={Calendar} label="Dates" active={location.pathname === '/reminders'} />
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 bg-gray-50/50 py-8 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-gray-500">
+              © {new Date().getFullYear()} CareerPath.AI. All rights reserved.
+            </p>
+            <div className="flex gap-6">
+              <Link to="/terms" className="text-sm text-gray-500 hover:text-primary-600 transition-colors">
+                Terms of Service
+              </Link>
+              <Link to="/privacy" className="text-sm text-gray-500 hover:text-primary-600 transition-colors">
+                Privacy Policy
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
