@@ -1,4 +1,4 @@
-import { createClient, Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
