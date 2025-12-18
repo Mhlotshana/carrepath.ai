@@ -5,10 +5,7 @@ import { AnalysisResult, Subject, ResourceCategory } from "../types";
 const isProduction = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
 
 // For local development, use direct API calls
-const ai = !isProduction ? new GoogleGenAI({
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
-  apiVersion: "v1"
-}) : null;
+const ai = !isProduction ? new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY) : null;
 
 // 1. Extract Matric Data - Works locally AND in production
 export const extractMatricData = async (base64Data: string, mimeType: string): Promise<{ subjects: Subject[]; name?: string; idNumber?: string }> => {
