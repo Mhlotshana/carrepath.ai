@@ -114,6 +114,10 @@ const UploadPage: React.FC = () => {
       setError('Please ensure all subjects have valid names and marks.');
       return;
     }
+    if (manualSubjects.some(s => s.mark > 100 || s.mark < 0)) {
+      setError('Marks must be between 0 and 100.');
+      return;
+    }
 
     setStep('processing');
     setProcessingStage('Analyzing your profile...');

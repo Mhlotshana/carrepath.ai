@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult, Subject, ResourceCategory } from "../types";
 import { INSTITUTIONS, FUNDING_SOURCES } from '../constants/institutions';
+import { DEADLINE_GUIDE, SPECIFIC_CLOSING_DATES } from '../constants/deadlines';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -100,11 +101,30 @@ export const analyzeProfile = async (subjects: Subject[], aps: number): Promise<
 
   const fundingList = FUNDING_SOURCES.join(', ');
 
+  // Current Context
+  const today = new Date().toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' });
+  const deadlineContext = `
+    CURRENT DATE: ${today}.
+    
+    STANDARD DEADLINES (Use as ground truth):
+    - Public Unis: ${DEADLINE_GUIDE.universities}
+    - TVETs: ${DEADLINE_GUIDE.tvet_colleges}
+    - Specific: ${JSON.stringify(SPECIFIC_CLOSING_DATES)}
+    
+    INSTRUCTION: If a deadline has passed relative to ${today}, expressly warn the student (e.g. "Applications Closed - Try Next Year/Semester").
+  `;
+
   const prompt = `
     Role: Expert South African Career Guidance Counselor & Admissions Officer.
     
     Student Profile:
     - Calculated APS: ${aps} (Life Orientation excluded).
+    // ...
+    OBJECTIVE: Generate a comprehensive, realistic study and funding plan using verified sources.
+    
+    ${deadlineContext}
+
+    ${strategyHint}
     - Subjects: ${JSON.stringify(subjects)}.
     - Key Constraints: ${hasPureMaths ? `Pure Maths (Level ${mathLevel})` : hasMathsLit ? `Maths Lit (Level ${mathLevel})` : 'No Maths'}. ${hasPhysics ? `Physical Sciences (Level ${physicsLevel})` : 'No Physical Sciences'}. English Level: ${englishLevel}.
 
