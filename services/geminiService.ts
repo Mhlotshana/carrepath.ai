@@ -7,7 +7,7 @@ const isProduction = window.location.hostname !== 'localhost' && !window.locatio
 // For local development, use direct API calls
 const ai = !isProduction ? new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY,
-  apiVersion: "v1"
+  apiVersion: "v1beta"
 }) : null;
 
 // 1. Extract Matric Data - Works locally AND in production

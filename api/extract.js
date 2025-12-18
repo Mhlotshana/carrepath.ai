@@ -1,8 +1,8 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
-    apiVersion: "v1"
+    apiVersion: "v1beta"
 });
 
 export default async function handler(req, res) {
@@ -68,18 +68,18 @@ Return valid JSON with the exact structure specified.`;
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
-                    type: "object",
+                    type: Type.OBJECT,
                     properties: {
-                        name: { type: "string" },
-                        idNumber: { type: "string" },
+                        name: { type: Type.STRING },
+                        idNumber: { type: Type.STRING },
                         subjects: {
-                            type: "array",
+                            type: Type.ARRAY,
                             items: {
-                                type: "object",
+                                type: Type.OBJECT,
                                 properties: {
-                                    name: { type: "string" },
-                                    mark: { type: "number" },
-                                    level: { type: "number" }
+                                    name: { type: Type.STRING },
+                                    mark: { type: Type.NUMBER },
+                                    level: { type: Type.NUMBER }
                                 },
                                 required: ['name', 'mark']
                             }
