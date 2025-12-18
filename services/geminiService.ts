@@ -39,7 +39,7 @@ export const extractMatricData = async (base64Data: string, mimeType: string): P
   try {
     if (!genAI) throw new Error("AI not initialized");
 
-    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-002", "gemini-1.5-flash-001", "gemini-2.0-flash-exp"];
+    const modelsToTry = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-2.0-flash-001", "gemini-2.5-flash"];
     let lastError;
     let resultResponse;
 
