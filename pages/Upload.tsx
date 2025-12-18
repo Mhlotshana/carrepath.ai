@@ -35,6 +35,19 @@ const UploadPage: React.FC = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
+
+      // Validate file size (max 10MB)
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        setError('⚠️ File too large! Please use an image under 10MB or take a photo directly.');
+        return;
+      }
+
+      // Validate file type
+      if (!selectedFile.type.includes('image') && !selectedFile.type.includes('pdf')) {
+        setError('⚠️ Invalid file type. Please upload an image (JPG, PNG) or PDF.');
+        return;
+      }
+
       setFile(selectedFile);
 
       const reader = new FileReader();
@@ -99,8 +112,21 @@ const UploadPage: React.FC = () => {
       }
 
     } catch (e) {
-      console.error(e);
-      setError('Auto-scan failed. Please switch to manual entry.');
+      console.error('Extraction error details:', e);
+
+      // Provide specific, helpful error messages
+      const errorMessage = e.message || 'Unknown error occurred';
+
+      if (errorMessage.includes('API key') || errorMessage.includes('CONFIGURATION_ERROR')) {
+        setError('⚠️ System configuration issue detected. The API key may not be set up correctly. Please contact support or use manual entry for now.');
+      } else if (errorMessage.includes('QUALITY_ERROR') || errorMessage.includes('Not enough subjects')) {
+        setError('📸 Image quality issue: We could only detect a few subjects. Tips:\n• Use better lighting\n• Ensure all text is clearly visible\n• Avoid glare or shadows\n• Or use manual entry below');
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        setError('🌐 Connection issue: Please check your internet and try again, or use manual entry.');
+      } else {
+        setError(`❌ Auto-scan unsuccessful: ${errorMessage}\n\nYou can use manual entry below to continue.`);
+      }
+
       setStep('manual');
     }
   };

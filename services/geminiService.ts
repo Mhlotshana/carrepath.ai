@@ -3,8 +3,8 @@ import { AnalysisResult, Subject, ResourceCategory } from "../types";
 // All Gemini API calls now happen on the backend for security
 // The API key is only stored on the server, never exposed to the browser
 
-// 1. Extract Matric Data from Image/PDF (Backend API)
-export const extractMatricData = async (base64Data: string, mimeType: string): Promise<{ subjects: Subject[]; name?: string; idNumber?: string }> => {
+// 1. Extract Matric Data from Image/PDF (Backend API with retry logic)
+export const extractMatricData = async (base64Data: string, mimeType: string, retries = 2): Promise<{ subjects: Subject[]; name?: string; idNumber?: string }> => {
   try {
     const response = await fetch('/api/extract', {
       method: 'POST',
@@ -12,14 +12,45 @@ export const extractMatricData = async (base64Data: string, mimeType: string): P
       body: JSON.stringify({ base64Data, mimeType })
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error('Extraction failed');
+      // Check for specific error types
+      if (response.status === 500 && data.details?.includes('API key')) {
+        throw new Error('CONFIGURATION_ERROR: API key not set up. Please contact support.');
+      }
+      if (response.status === 400 && data.details?.includes('Insufficient')) {
+        throw new Error(`QUALITY_ERROR: ${data.details}`);
+      }
+      throw new Error(data.details || data.error || 'Extraction failed');
     }
 
-    return await response.json();
+    // Extra validation on client side
+    if (!data.subjects || data.subjects.length < 3) {
+      throw new Error('VALIDATION_ERROR: Not enough subjects found. Please ensure the image shows all your results clearly.');
+    }
+
+    return data;
+
   } catch (error) {
     console.error("Extraction error:", error);
-    throw new Error("Failed to extract data. Please try manual entry.");
+
+    // Retry logic for network errors (but not for quality/validation errors)
+    if (retries > 0 && !error.message.includes('ERROR:')) {
+      console.warn(`Retrying extraction (${retries} attempts left)...`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      return extractMatricData(base64Data, mimeType, retries - 1);
+    }
+
+    // Provide user-friendly error messages
+    if (error.message.includes('CONFIGURATION_ERROR')) {
+      throw new Error("System configuration issue. Please contact support or use manual entry.");
+    }
+    if (error.message.includes('QUALITY_ERROR') || error.message.includes('VALIDATION_ERROR')) {
+      throw error; // Pass through quality errors as-is
+    }
+
+    throw new Error("Failed to extract data. This could be due to image quality, format, or network issues. Please try:\n• A clearer photo\n• Better lighting\n• Manual entry");
   }
 };
 
