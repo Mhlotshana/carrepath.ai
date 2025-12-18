@@ -1,8 +1,8 @@
-const { GoogleGenAI } = require("@google/genai");
+import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -48,4 +48,4 @@ module.exports = async function handler(req, res) {
         console.error("Verification failed", error);
         return res.status(500).json({ verified: false, reason: 'Server error' });
     }
-};
+}

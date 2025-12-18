@@ -1,8 +1,8 @@
-const { GoogleGenAI } = require("@google/genai");
+import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -22,13 +22,13 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // This is a simplified version - full analysis would be very large
-        // For production, consider moving the full AI logic here
+        // For production, return a simplified mock
+        // In a real implementation, you'd call the full AI analysis here
         const mockResult = {
             summary: {
                 title: `Career Analysis for APS ${aps}`,
                 overview: "Comprehensive analysis based on your matric results.",
-                strengths: ["Competitive APS score"],
+                strengths: ["Competitive APS score", "Good subject selection"],
                 limitations: []
             },
             courses: [
@@ -40,11 +40,11 @@ module.exports = async function handler(req, res) {
                     duration: "3 years",
                     minAps: 25,
                     faculty: "General",
-                    requirements: "See institution",
+                    requirements: "See institution website",
                     applicationDeadline: "30 September",
                     applicationLink: "https://example.com",
-                    modules: ["Module 1"],
-                    careerOutcomes: ["Career 1"]
+                    modules: ["Module 1", "Module 2"],
+                    careerOutcomes: ["Career Option 1"]
                 }
             ],
             bursaries: [],
@@ -57,4 +57,4 @@ module.exports = async function handler(req, res) {
         console.error("Analysis error:", error);
         return res.status(500).json({ error: 'Failed to analyze profile' });
     }
-};
+}

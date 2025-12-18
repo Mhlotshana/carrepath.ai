@@ -1,8 +1,8 @@
-const { GoogleGenAI } = require("@google/genai");
+import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -116,4 +116,4 @@ Return valid JSON with the exact structure specified.`;
             suggestion: 'Try using a clearer image, better lighting, or manual entry.'
         });
     }
-};
+}
