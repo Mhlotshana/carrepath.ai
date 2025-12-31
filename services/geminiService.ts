@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AnalysisResult, Subject, ResourceCategory } from "../types";
 
 // Detect if we're running locally or in production
-const isProduction = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
+const isProduction = !import.meta.env.DEV;
 
 // For local development, use direct API calls
 const genAI = !isProduction ? new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY) : null;
